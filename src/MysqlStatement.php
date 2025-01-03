@@ -2,36 +2,41 @@
 
 namespace Amp\Mysql\DBAL;
 
-use Amp\Mysql\Statement as SqlStatement;
+use Amp\Mysql\MysqlStatement as SqlStatement;
+use Closure;
 use Doctrine\DBAL\Driver\Exception;
 use Doctrine\DBAL\Driver\Result;
 use Doctrine\DBAL\Driver\Statement;
 use Doctrine\DBAL\ParameterType;
+use Throwable;
+use function is_int;
 
 class MysqlStatement implements Statement
 {
     private const PARAM_TYPES = [
-        ParameterType::NULL => null,
-        ParameterType::INTEGER => null,
-        ParameterType::STRING => null,
-        ParameterType::ASCII => null,
-        ParameterType::BINARY => null,
-        ParameterType::LARGE_OBJECT => null,
-        ParameterType::BOOLEAN => null,
+        ParameterType::NULL         => true,
+        ParameterType::INTEGER      => true,
+        ParameterType::STRING       => true,
+        ParameterType::ASCII        => true,
+        ParameterType::BINARY       => true,
+        ParameterType::LARGE_OBJECT => true,
+        ParameterType::BOOLEAN      => true,
     ];
 
     private SqlStatement $statement;
-    private \Closure $resultListener;
+
+    private Closure $resultListener;
 
     private array $values = [];
+
     private array $types = [];
 
     public function __construct(SqlStatement $statement, callable $resultListener)
     {
         $this->statement = $statement;
-        $this->resultListener = $resultListener instanceof \Closure
+        $this->resultListener = $resultListener instanceof Closure
             ? $resultListener
-            : \Closure::fromCallable($resultListener);
+            : $resultListener(...);
     }
 
     public function bindValue($param, $value, $type = ParameterType::STRING): bool
@@ -40,7 +45,7 @@ class MysqlStatement implements Statement
             throw Exception\UnknownParameterType::new($type);
         }
 
-        $key = \is_int($param) ? $param - 1 : $param;
+        $key = is_int($param) ? $param - 1 : $param;
 
         $this->values[$key] = $this->convertValue($value, $type);
 
@@ -81,7 +86,7 @@ class MysqlStatement implements Statement
             ($this->resultListener)($result);
 
             return new MysqlResult($result);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw MysqlException::new($e);
         }
     }

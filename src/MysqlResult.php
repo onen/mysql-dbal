@@ -2,9 +2,11 @@
 
 namespace Amp\Mysql\DBAL;
 
-use Amp\Mysql\Result as SqlResult;
+use Amp\Mysql\MysqlResult as SqlResult;
 use Doctrine\DBAL\Driver\FetchUtils;
 use Doctrine\DBAL\Driver\Result;
+use function array_values;
+use function count;
 
 class MysqlResult implements Result
 {
@@ -22,16 +24,16 @@ class MysqlResult implements Result
             return false;
         }
 
-        return \array_values($row);
+        return array_values($row);
     }
 
     public function fetchAssociative(): array|false
     {
         /** @noinspection ProperNullCoalescingOperatorUsageInspection */
-        return $this->result->continue() ?? false;
+        return $this->result->fetchRow() ?? false;
     }
 
-    public function fetchOne()
+    public function fetchOne(): mixed
     {
         return FetchUtils::fetchOne($this);
     }
@@ -58,11 +60,10 @@ class MysqlResult implements Result
 
     public function columnCount(): int
     {
-        return \count($this->result->getFields());
+        return count($this->result->getColumnDefinitions());
     }
 
     public function free(): void
     {
-        $this->result->dispose();
     }
 }
