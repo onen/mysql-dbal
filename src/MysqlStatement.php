@@ -93,6 +93,11 @@ class MysqlStatement implements Statement
 
     private function convertValue($value, int $type): null|bool|int|string
     {
+        // we don't want to convert or cast null values
+        if ($value === null) {
+            // Doctrine needs to receive the null value as-is
+            return null;
+        }
         return match ($type) {
             ParameterType::NULL => null,
             ParameterType::INTEGER => (int) $value,
